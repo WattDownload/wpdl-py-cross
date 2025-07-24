@@ -39,8 +39,6 @@ async def download_wattpad_story(
     if LIBRARY_MISSING:
         raise RuntimeError("Could not find library files (endpoints.py, etc.).")
 
-    # --- FIXED: More robust ID parsing ---
-    # It now correctly handles URLs with or without a title slug (e.g., /story/12345)
     try:
         id_part = url.split("wattpad.com/")[1]
         if "story/" in id_part:
@@ -49,7 +47,6 @@ async def download_wattpad_story(
         mode = "story" if "/story/" in url else "part"
     except (IndexError, ValueError):
         raise ValueError("Could not parse the Story ID from the URL.")
-    # --- End of fix ---
 
     cookies = None
     if username and password:
@@ -68,9 +65,13 @@ async def download_wattpad_story(
         print(f"Metadata fetch error: {e}")
         raise ConnectionError("Story not found or is inaccessible. It may be deleted, a draft, or require a login.")
 
-    # (The rest of this function is unchanged)
     status_control.value = "Fetching cover..."; page.update()
     cover_data = await fetch_image(metadata["cover"].replace("-256-", "-512-"))
+    
+    # --- FIX 1: Ensure cover image was actually downloaded ---
+    if not cover_data:
+        raise ConnectionError("Failed to download the story's cover image. The link may be broken.")
+    
     status_control.value = "Fetching story content..."; page.update()
     story_zip_bytes = await fetch_story_content_zip(metadata["id"], cookies)
     archive = ZipFile(story_zip_bytes, "r")
@@ -79,14 +80,23 @@ async def download_wattpad_story(
         if part.get("deleted", False): continue
         part_trees.append(clean_tree(part["title"], part["id"], archive.read(str(part["id"])).decode("utf-8")))
     archive.close()
+    
     images = []
     if download_images:
         status_control.value = "Fetching images..."; page.update()
         images = await asyncio.gather(*[fetch_tree_images(tree) for tree in part_trees])
+        
     status_control.value = "Compiling EPUB..."; page.update()
     book = EPUBGenerator(metadata, part_trees, cover_data, images)
     book.compile()
     file_content = book.dump().getvalue()
+    
+    # --- FIX 2: Ensure the generated EPUB file is not empty ---
+    # This is the most critical check to prevent the "Document is Empty" error.
+    # A valid EPUB, even a basic one, will be larger than a few hundred bytes.
+    if not file_content or len(file_content) < 200:
+        raise ValueError("Generated EPUB is empty. The story might have no chapters or content could not be parsed.")
+
     suggested_filename = f"{ascii_only(metadata['title'])}.epub"
     return file_content, suggested_filename
 
