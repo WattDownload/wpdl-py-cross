@@ -136,22 +136,29 @@ def main(page: ft.Page):
         """Callback for when the user has picked a file location."""
         nonlocal generated_file_content
         save_path = e.path
-        if save_path and generated_file_content:
-            try:
-                with open(save_path, "wb") as f:
-                    f.write(generated_file_content)
-            
-                # Switch to the success screen instead of showing a snackbar
-                switcher.content = success_view
-                page.update()
 
-            except Exception as ex:
-                error_dialog.content = ft.Text(f"Error saving file: {ex}")
-                page.open(error_dialog) # Use page.open() here as well
-        else:
-            # If the user cancelled the save dialog, just reset the UI.
+        # CRITICAL CHECK: Ensure there is content to save AND the user didn't cancel.
+        if not save_path or not generated_file_content:
+            # If the user cancelled the picker (save_path is None) or if the
+            # content is missing, reset the UI and do nothing.
             reset_ui()
+            return
 
+        try:
+            with open(save_path, "wb") as f:
+                f.write(generated_file_content)
+        
+            # Switch to the success screen
+            switcher.content = success_view
+            page.update()
+
+        except Exception as ex:
+            # This error handling is crucial for debugging on the device.
+            error_dialog.content = ft.Text(f"Failed to save to the selected path: {ex}\nPath: {save_path}")
+            page.open(error_dialog)
+        finally:
+            # Clear the content after attempting to save to free up memory.
+            generated_file_content = None
 
     async def process_url_click(e):
         nonlocal generated_file_content
