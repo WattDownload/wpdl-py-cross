@@ -1,4 +1,4 @@
-# WpdlPyDesktop app
+# WPDL Cross PY app
 
 ## Run the app
 
