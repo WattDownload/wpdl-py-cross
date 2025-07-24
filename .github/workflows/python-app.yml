@@ -32,6 +32,8 @@ jobs:
         uv sync --link-mode=copy
 
     - name: Build windows image
+      env:
+        PYTHONUTF8: 1
       run: uv run flet build windows
 
     - name: show all folders
