@@ -1,0 +1,43 @@
+name: Build Android
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "*.*.*"
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'oracle'
+
+    - name: Set up Python 3.13.5
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.13.5"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv sync --link-mode=copy
+
+    - name: Build windows image
+      run: uv run flet build apk
+
+    - name: Upload artifacts.
+      uses: actions/upload-artifact@v4
+      with: 
+        name: android-build
+        path: build\android
+        if-no-files-found: error
+        compression-level: 9
