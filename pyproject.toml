@@ -31,17 +31,17 @@ dependencies = [
 [tool.flet]
 # org name in reverse domain name notation, e.g. "com.mycompany".
 # Combined with project.name to build bundle ID for iOS and Android apps
-org = "com.mycompany"
+org = "us.wpdl"
 
 # project display name that is used as an app title on Android and iOS home screens,
 # shown in window titles and about app dialogs on desktop.
-product = "wpdl-py-desktop"
+product = "wpdl-py"
 
 # company name to display in about app dialogs
-company = "Flet"
+company = "Longwang"
 
 # copyright text to display in about app dialogs
-copyright = "Copyright (C) 2025 by Flet"
+copyright = "Copyright (C) 2025 by Longwang"
 
 [tool.flet.app]
 path = "src"
@@ -56,3 +56,15 @@ package-mode = false
 
 [tool.poetry.group.dev.dependencies]
 flet = {extras = ["all"], version = "0.28.3"}
+
+[tool.flet.android]
+split_per_abi = false
+min_sdk_version = 21
+target_sdk_version = 35
+
+[tool.flet.splash]
+android = true
+
+[tool.flet.android.permission] 
+
+[tool.flet.android.feature]
