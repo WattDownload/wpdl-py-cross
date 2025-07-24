@@ -5,7 +5,7 @@ description = ""
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [
-    { name = "Flet developer", email = "you@example.com" }
+    { name = "Longwang Dev", email = "long@wpdl.us" }
 ]
 dependencies = [
   "aiohappyeyeballs>=2.6.1",
@@ -65,6 +65,8 @@ target_sdk_version = 35
 [tool.flet.splash]
 android = true
 
-[tool.flet.android.permission] 
+[tool.flet.android.permission]
+"android.permission.WRITE_EXTERNAL_STORAGE" = true
+"android.permission.READ_EXTERNAL_STORAGE" = true
 
 [tool.flet.android.feature]
