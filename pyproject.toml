@@ -9,7 +9,7 @@ authors = [
 ]
 dependencies = [
   "aiohappyeyeballs>=2.6.1",
-  "aiohttp>=3.12.14",
+  "aiohttp==3.9.5",
   "aiosignal>=1.4.0",
   "attrs>=25.3.0",
   "backoff>=2.2.1",
