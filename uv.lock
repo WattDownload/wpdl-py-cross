@@ -1845,7 +1845,7 @@ requires-dist = [
     { name = "six", specifier = ">=1.17.0" },
     { name = "soupsieve", specifier = ">=2.7" },
     { name = "typing-extensions", specifier = ">=4.14.1" },
-    { name = "yarl", specifier = ">=1.20.1" },
+    { name = "yarl", specifier = ">=1.11.1" },
 ]
 
 [package.metadata.requires-dev]
