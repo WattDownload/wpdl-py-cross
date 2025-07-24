@@ -140,9 +140,11 @@ def main(page: ft.Page):
             try:
                 with open(save_path, "wb") as f:
                     f.write(generated_file_content)
-                page.snack_bar = ft.SnackBar(content=ft.Text(f"Successfully saved!"), bgcolor=ft.Colors.GREEN_700)
-                page.snack_bar.open = True
+            
+                # Switch to the success screen instead of showing a snackbar
+                switcher.content = success_view
                 page.update()
+
             except Exception as ex:
                 error_dialog.content = ft.Text(f"Error saving file: {ex}")
                 page.open(error_dialog) # Use page.open() here as well
@@ -201,8 +203,32 @@ def main(page: ft.Page):
     status_text = ft.Text("Enter a link to begin.", text_align=ft.TextAlign.CENTER, size=16)
     input_view = ft.Column([ft.Icon(ft.Icons.CLOUD_DOWNLOAD_ROUNDED, size=40, color="white"), ft.Container(height=10), ft.Text("Wattpad Downloader", size=24, weight=ft.FontWeight.BOLD), ft.Text("Download Wattpad stories as clean EPUB files.", text_align=ft.TextAlign.CENTER), ft.Container(height=20), url_input, advanced_options, ft.Row([download_images_switch], alignment=ft.MainAxisAlignment.CENTER), ft.Container(height=15), download_button], width=400, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5)
     progress_view = ft.Column([ft.Container(height=150), ft.ProgressRing(width=48, height=48, stroke_width=5), ft.Container(height=20), status_text, ft.Container(height=250)], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10)
-    switcher = ft.AnimatedSwitcher(content=input_view, transition=ft.AnimatedSwitcherTransition.SCALE, duration=300, reverse_duration=300)
+    switcher = ft.AnimatedSwitcher(content=input_view, transition=ft.AnimatedSwitcherTransition.FADE, duration=300, reverse_duration=300)
     page.add(switcher)
+
+    def restart_app(e):
+        """Calls the main UI reset function."""
+        reset_ui()
+
+    success_view = ft.Column(
+        [
+            ft.Container(height=150),
+            ft.Icon(ft.Icons.CHECK_CIRCLE_OUTLINE_ROUNDED, color=ft.Colors.GREEN, size=60),
+            ft.Container(height=20),
+            ft.Text("Download Successful!", size=24, weight=ft.FontWeight.BOLD),
+            ft.Text("Your EPUB file has been saved.", text_align=ft.TextAlign.CENTER),
+            ft.Container(height=30),
+            ft.ElevatedButton(
+                "Download Another", 
+                icon=ft.Icons.REFRESH_ROUNDED, 
+                on_click=restart_app, 
+                height=50,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
+            )
+        ],
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        spacing=10
+    )
 
 if __name__ == "__main__":
     ft.app(target=main)
