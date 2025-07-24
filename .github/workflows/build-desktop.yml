@@ -1,0 +1,110 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python application
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "*.*.*"
+  
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-windows:
+    runs-on: windows-2025
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.13.5
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.13.5"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv sync --link-mode=copy
+
+    - name: Build windows image
+      run: uv run flet build windows
+      shell: pwsh
+      
+    - name: Upload artifacts.
+      uses: actions/upload-artifact@v4
+      with: 
+        name: windows-build
+        path: build\windows
+        if-no-files-found: error
+        compression-level: 9
+
+  build-macos:
+    runs-on: macos-15 # Use an Apple Silicon (ARM64) runner
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rosetta 2 (for compatibility)
+      run: sudo softwareupdate --install-rosetta --agree-to-license
+    
+    - name: Set up Python 3.13.5
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13.5"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv sync --link-mode=copy
+
+    - name: Build macOS image
+      # We build specifically for arm64 to avoid issues with universal binaries
+      run: uv run flet build macos --arch arm64
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with: 
+        name: macos-build-arm64
+        path: build/macos
+        if-no-files-found: error
+        compression-level: 9
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install system dependencies
+      # Installs prerequisites for Flet Audio and Video controls
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libmpv-dev mpv
+    
+    - name: Set up Python 3.13.5
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13.5"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install uv
+        uv sync --link-mode=copy
+
+    - name: Build Linux image
+      run: uv run flet build linux
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with: 
+        name: linux-build
+        path: build/linux
+        if-no-files-found: error
+        compression-level: 9
