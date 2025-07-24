@@ -34,6 +34,8 @@ jobs:
     - name: Build windows image
       run: uv run flet build windows
       shell: pwsh
+      env:
+        PYTHONUTF8: 1
       
     - name: Upload artifacts.
       uses: actions/upload-artifact@v4
