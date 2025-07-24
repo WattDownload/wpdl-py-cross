@@ -45,7 +45,7 @@ async def download_wattpad_story(
         id_part = url.split("wattpad.com/")[1]
         if "story/" in id_part:
             id_part = id_part.split("story/")[1]
-        ID = id_part.split('-')[0]
+        ID = id_part.split('-')[0].split('?')[0]
         mode = "story" if "/story/" in url else "part"
     except (IndexError, ValueError):
         raise ValueError("Could not parse the Story ID from the URL.")
