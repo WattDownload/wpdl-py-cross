@@ -70,3 +70,7 @@ android = true
 "android.permission.READ_EXTERNAL_STORAGE" = true
 
 [tool.flet.android.feature]
+
+[tool.flet.android.signing]
+key_store = "wpdl-py.jks" # --android-signing-key-store
+key_alias = "wpdl-py"
