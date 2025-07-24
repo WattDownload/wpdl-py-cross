@@ -32,7 +32,7 @@ jobs:
         uv sync --link-mode=copy
 
     - name: Build windows image
-      run: uv run flet build apk
+      run: uv run flet build apk --android-signing-key-store-password ${{ secrets.KEYSTORE_PASS }}
 
     - name: Upload artifacts.
       uses: actions/upload-artifact@v4
