@@ -90,7 +90,6 @@ async def download_wattpad_story(
     suggested_filename = f"{ascii_only(metadata['title'])}.epub"
     return file_content, suggested_filename
 
-
 # --- Flet GUI Application ---
 # (Your backend logic like download_wattpad_story, endpoints, etc. remains the same)
 
@@ -103,7 +102,7 @@ def main(page: ft.Page):
     page.window_width = 500
     page.window_height = 650
 
-    # --- UI Reset and Error Handling Logic ---
+    # --- UI Reset and Error Handling Logic (Unchanged) ---
     def reset_ui():
         """A single function to reset the UI to its initial state."""
         url_input.value = ""
@@ -120,7 +119,6 @@ def main(page: ft.Page):
         page.close(error_dialog)
         reset_ui()
 
-    # --- MODIFIED: Dialog is now opened with page.open() ---
     error_dialog = ft.AlertDialog(
         modal=True,
         title=ft.Text("An Error Occurred"),
@@ -128,34 +126,39 @@ def main(page: ft.Page):
         actions=[ft.TextButton("OK", on_click=close_dialog)],
         actions_alignment=ft.MainAxisAlignment.END,
     )
-    # The line `page.dialog = error_dialog` is no longer needed.
     
     generated_file_content = None
 
     def save_file_result(e: ft.FilePickerResultEvent):
-        """Callback for when the user has picked a file location."""
+        """Callback for when the user has picked a file location (DESKTOP ONLY)."""
         nonlocal generated_file_content
         save_path = e.path
         if save_path and generated_file_content:
             try:
                 with open(save_path, "wb") as f:
                     f.write(generated_file_content)
-            
-                # Switch to the success screen instead of showing a snackbar
+                
+                # Switch to the success screen
                 switcher.content = success_view
                 page.update()
 
             except Exception as ex:
                 error_dialog.content = ft.Text(f"Error saving file: {ex}")
-                page.open(error_dialog) # Use page.open() here as well
+                page.open(error_dialog)
         else:
             # If the user cancelled the save dialog, just reset the UI.
             reset_ui()
+    
+    # This FilePicker will now only be used for desktop
+    file_picker = ft.FilePicker(on_result=save_file_result)
+    page.overlay.append(file_picker)
 
-
+    # --- ⭐️ MODIFIED FUNCTION FOR CROSS-PLATFORM SAVING ⭐️ ---
+    # --- The definitive cross-platform function ---
     async def process_url_click(e):
         nonlocal generated_file_content
         
+        # (Input validation logic is unchanged...)
         url_input.error_text = None
         url_pattern = r"(?:https?://)?(www\.)?wattpad\.com/(\d+|story/\d+)(-.*)?"
         if not match(url_pattern, url_input.value.strip()):
@@ -173,27 +176,41 @@ def main(page: ft.Page):
                 download_images=download_images_switch.value,
                 status_control=status_text, page=page
             )
-            generated_file_content = file_bytes
+            
             status_text.value = "✅ Success! Choose where to save."
             page.update()
-            file_picker.save_file(dialog_title="Save Your EPUB", file_name=filename, allowed_extensions=["epub"])
+
+            # --- Platform-specific saving logic ---
+            if page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]:
+                # On Mobile, use page.save_file() which opens the native save UI
+                # NOTE: The method is awaitable and the content parameter is 'data'
+                result_path = await page.save_file(
+                    dialog_title="Save Your EPUB",
+                    file_name=filename,
+                    data=file_bytes
+                )
+                if result_path:
+                    switcher.content = success_view
+                    page.update()
+                else: 
+                    reset_ui()
+            else:
+                # On Desktop, use the FilePicker as before
+                generated_file_content = file_bytes
+                file_picker.save_file(
+                    dialog_title="Save Your EPUB", 
+                    file_name=filename, 
+                    allowed_extensions=["epub"]
+                )
 
         except Exception as ex:
-            # --- FIXED: This block now reliably shows the error dialog ---
+            # (Error handling is unchanged...)
             print(f"An unexpected error occurred: {ex}")
-            
-            # 1. Immediately switch back to the input form so you're not stuck.
             switcher.content = input_view
-            
-            # 2. Set the dialog's error message.
             error_dialog.content = ft.Text(str(ex))
-            
-            # 3. Open the dialog using the page.open() method.
             page.open(error_dialog)
 
-    # (The UI component definitions and layout below are unchanged)
-    file_picker = ft.FilePicker(on_result=save_file_result)
-    page.overlay.append(file_picker)
+    # --- UI Component Definitions and Layout (Unchanged) ---
     url_input = ft.TextField(label="Wattpad Story URL", hint_text="https://www.wattpad.com/story/123-your-story", width=400, border_radius=ft.border_radius.all(10), on_submit=process_url_click)
     username_input = ft.TextField(label="Username", border_radius=ft.border_radius.all(10))
     password_input = ft.TextField(label="Password", border_radius=ft.border_radius.all(10), password=True, can_reveal_password=True)
