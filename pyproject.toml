@@ -58,7 +58,7 @@ package-mode = false
 flet = {extras = ["all"], version = "0.28.3"}
 
 [tool.flet.android]
-split_per_abi = false
+split_per_abi = true
 min_sdk_version = 21
 target_sdk_version = 35
 
