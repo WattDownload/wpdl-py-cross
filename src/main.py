@@ -34,13 +34,13 @@ async def download_wattpad_story(
     page: ft.Page
 ):
     """
-    This is your backend logic, with more robust ID parsing.
+    This is your backend logic. It now saves the file to a temporary location
+    in the app's private storage and returns the path to that file.
     """
+    # (The initial part of the function for fetching metadata remains the same)
     if LIBRARY_MISSING:
         raise RuntimeError("Could not find library files (endpoints.py, etc.).")
 
-    # --- FIXED: More robust ID parsing ---
-    # It now correctly handles URLs with or without a title slug (e.g., /story/12345)
     try:
         id_part = url.split("wattpad.com/")[1]
         if "story/" in id_part:
@@ -49,7 +49,6 @@ async def download_wattpad_story(
         mode = "story" if "/story/" in url else "part"
     except (IndexError, ValueError):
         raise ValueError("Could not parse the Story ID from the URL.")
-    # --- End of fix ---
 
     cookies = None
     if username and password:
@@ -68,7 +67,6 @@ async def download_wattpad_story(
         print(f"Metadata fetch error: {e}")
         raise ConnectionError("Story not found or is inaccessible. It may be deleted, a draft, or require a login.")
 
-    # (The rest of this function is unchanged)
     status_control.value = "Fetching cover..."; page.update()
     cover_data = await fetch_image(metadata["cover"].replace("-256-", "-512-"))
     status_control.value = "Fetching story content..."; page.update()
@@ -83,12 +81,25 @@ async def download_wattpad_story(
     if download_images:
         status_control.value = "Fetching images..."; page.update()
         images = await asyncio.gather(*[fetch_tree_images(tree) for tree in part_trees])
+    
     status_control.value = "Compiling EPUB..."; page.update()
     book = EPUBGenerator(metadata, part_trees, cover_data, images)
     book.compile()
     file_content = book.dump().getvalue()
+    
+    # --- MODIFICATION START ---
+    # Save the generated file to the app's private directory
     suggested_filename = f"{ascii_only(metadata['title'])}.epub"
-    return file_content, suggested_filename
+    temp_dir = Path(page.get_files_dir()) # Get app's private files directory
+    temp_dir.mkdir(exist_ok=True)       # Ensure it exists
+    temp_file_path = temp_dir / suggested_filename
+    
+    # Write the EPUB content to the temporary file
+    temp_file_path.write_bytes(file_content)
+
+    # Return the path to the temporary file and the suggested name
+    return str(temp_file_path), suggested_filename
+    # --- MODIFICATION END ---
 
 
 # --- Flet GUI Application ---
@@ -130,66 +141,88 @@ def main(page: ft.Page):
     )
     # The line `page.dialog = error_dialog` is no longer needed.
     
-    generated_file_content = None
+    temp_file_path_to_save = None
 
-    def save_file_result(e: ft.FilePickerResultEvent):
-        """Callback for when the user has picked a file location."""
-        nonlocal generated_file_content
-        save_path = e.path
-        if save_path and generated_file_content:
-            try:
-                with open(save_path, "wb") as f:
-                    f.write(generated_file_content)
-            
-                # Switch to the success screen instead of showing a snackbar
-                switcher.content = success_view
-                page.update()
+    # --- MODIFIED: In your main() function ---
 
-            except Exception as ex:
-                error_dialog.content = ft.Text(f"Error saving file: {ex}")
-                page.open(error_dialog) # Use page.open() here as well
-        else:
-            # If the user cancelled the save dialog, just reset the UI.
-            reset_ui()
+def save_file_result(e: ft.FilePickerResultEvent):
+    """
+    Callback for when the user has picked a file location.
+    This now copies the temp file to the final destination and cleans up.
+    """
+    nonlocal temp_file_path_to_save
+    save_path_str = e.path
 
-
-    async def process_url_click(e):
-        nonlocal generated_file_content
-        
-        url_input.error_text = None
-        url_pattern = r"(?:https?://)?(www\.)?wattpad\.com/(\d+|story/\d+)(-.*)?"
-        if not match(url_pattern, url_input.value.strip()):
-            url_input.error_text = "Please enter a valid Wattpad URL."
-            page.update()
-            return
-            
-        switcher.content = progress_view
-        page.update()
-        
+    # Case 1: User selected a path to save the file
+    if save_path_str and temp_file_path_to_save:
         try:
-            file_bytes, filename = await download_wattpad_story(
-                url=url_input.value.strip(),
-                username=username_input.value.strip(), password=password_input.value,
-                download_images=download_images_switch.value,
-                status_control=status_text, page=page
-            )
-            generated_file_content = file_bytes
-            status_text.value = "✅ Success! Choose where to save."
+            temp_path = Path(temp_file_path_to_save)
+            dest_path = Path(save_path_str)
+
+            # Copy file from temp location to final destination
+            dest_path.write_bytes(temp_path.read_bytes())
+
+            # Show success screen
+            switcher.content = success_view
             page.update()
-            file_picker.save_file(dialog_title="Save Your EPUB", file_name=filename, allowed_extensions=["epub"])
 
         except Exception as ex:
-            # --- FIXED: This block now reliably shows the error dialog ---
-            print(f"An unexpected error occurred: {ex}")
-            
-            # 1. Immediately switch back to the input form so you're not stuck.
-            switcher.content = input_view
-            
-            # 2. Set the dialog's error message.
-            error_dialog.content = ft.Text(str(ex))
-            
-            # 3. Open the dialog using the page.open() method.
+            error_dialog.content = ft.Text(f"Error saving file: {ex}")
             page.open(error_dialog)
+        finally:
+            # Clean up the temporary file in all cases
+            if temp_path.exists():
+                temp_path.unlink()
+            temp_file_path_to_save = None
+    
+    # Case 2: User cancelled the save dialog
+    else:
+        # If a temp file was created, clean it up
+        if temp_file_path_to_save:
+            temp_path = Path(temp_file_path_to_save)
+            if temp_path.exists():
+                temp_path.unlink()
+            temp_file_path_to_save = None
+        
+        # Reset the main UI
+        reset_ui()
+
+
+async def process_url_click(e):
+    # This must be declared to modify the variable from the outer scope
+    nonlocal temp_file_path_to_save
+    
+    url_input.error_text = None
+    url_pattern = r"(?:https?://)?(www\.)?wattpad\.com/(\d+|story/\d+)(-.*)?"
+    if not match(url_pattern, url_input.value.strip()):
+        url_input.error_text = "Please enter a valid Wattpad URL."
+        page.update()
+        return
+        
+    switcher.content = progress_view
+    page.update()
+    
+    try:
+        # --- MODIFIED: Receive temp path and filename ---
+        temp_path, filename = await download_wattpad_story(
+            url=url_input.value.strip(),
+            username=username_input.value.strip(), password=password_input.value,
+            download_images=download_images_switch.value,
+            status_control=status_text, page=page
+        )
+        # Store the path for the save_file_result callback
+        temp_file_path_to_save = temp_path
+        
+        status_text.value = "✅ Success! Choose where to save."
+        page.update()
+        file_picker.save_file(dialog_title="Save Your EPUB", file_name=filename, allowed_extensions=["epub"])
+
+    except Exception as ex:
+        # (Error handling logic remains the same)
+        print(f"An unexpected error occurred: {ex}")
+        switcher.content = input_view
+        error_dialog.content = ft.Text(str(ex))
+        page.open(error_dialog)
 
     # (The UI component definitions and layout below are unchanged)
     file_picker = ft.FilePicker(on_result=save_file_result)
