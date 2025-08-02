@@ -5,9 +5,6 @@ name: Build Desktop
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "*.*.*"
   
 permissions:
   contents: read
