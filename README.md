@@ -1,5 +1,8 @@
 # WPDL Cross PY app
 
+> [!IMPORTANT]
+> We suggest you to use [wp-epub-rs-emini](https://github.com/WattDownload/wp-epub-rs-emini), which's fast and modern comparing to this application.
+
 ## Run the app
 
 ### uv
@@ -79,3 +82,4 @@ flet build windows -v
 ```
 
 For more details on building Windows package, refer to the [Windows Packaging Guide](https://flet.dev/docs/publish/windows/).
+
