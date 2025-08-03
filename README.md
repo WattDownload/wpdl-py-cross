@@ -1,4 +1,4 @@
-# WPDL Python Cross (Windows, Linux, MacOs)
+# WPDL Python Cross (Windows, Linux, MacOS)
 
 > [!IMPORTANT]
 > We suggest you to use [wp-epub-rs-emini](https://github.com/WattDownload/wp-epub-rs-emini), which's fast and modern, and supports Android.
@@ -44,6 +44,7 @@ uv run flet build windows -v
 ```
 
 For more details on building Windows package, refer to the [Windows Packaging Guide](https://flet.dev/docs/publish/windows/).
+
 
 
 
