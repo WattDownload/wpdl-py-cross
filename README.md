@@ -2,6 +2,9 @@
   <img src="logo.png" alt="WattDownload Logo" width="200px">
 </p>
 
+> [!IMPORTANT]
+> We suggest you to use [wp-epub-rs-emini](https://github.com/WattDownload/wp-epub-rs-emini), which's fast and modern, and supports Android.
+
 <h1 align="center">WP | Python | Cross (Windows, Linux, MacOS)</h1>
 
 <p align="center">
@@ -86,7 +89,3 @@ For more details on building Windows package, refer to the [Windows Packaging Gu
 > `Wattpad` is a registered trademark of `Wattpad` & `Webtoon Entertainment Inc.`. This project is not affiliated with, endorsed, or sponsored by Wattpad.
 
 <p align="center">© 2025 WattDownload.</p>
-
-
-> [!IMPORTANT]
-> We suggest you to use [wp-epub-rs-emini](https://github.com/WattDownload/wp-epub-rs-emini), which's fast and modern, and supports Android.
